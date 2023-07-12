@@ -1,4 +1,4 @@
-module github.com/lopezator/migrator
+module github.com/jonasala/migrator
 
 go 1.17
 
