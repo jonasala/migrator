@@ -10,11 +10,20 @@ import (
 
 const defaultTableName = "migrations"
 
+const defaultCreateStatement = `
+	CREATE TABLE IF NOT EXISTS %s (
+		id INT8 NOT NULL,
+		version VARCHAR(255) NOT NULL,
+		PRIMARY KEY (id)
+	);
+`
+
 // Migrator is the migrator implementation
 type Migrator struct {
-	tableName  string
-	logger     Logger
-	migrations []interface{}
+	tableName       string
+	logger          Logger
+	migrations      []interface{}
+	createStatement string
 }
 
 // Option sets options such migrations or table name.
@@ -24,6 +33,13 @@ type Option func(*Migrator)
 func TableName(tableName string) Option {
 	return func(m *Migrator) {
 		m.tableName = tableName
+	}
+}
+
+// CreateStatement creates an option to allow overriding the default create statement
+func CreateStatement(createStatement string) Option {
+	return func(m *Migrator) {
+		m.createStatement = createStatement
 	}
 }
 
@@ -57,8 +73,9 @@ func Migrations(migrations ...interface{}) Option {
 // New creates a new migrator instance
 func New(opts ...Option) (*Migrator, error) {
 	m := &Migrator{
-		logger:    log.New(os.Stdout, "migrator: ", 0),
-		tableName: defaultTableName,
+		logger:          log.New(os.Stdout, "migrator: ", 0),
+		tableName:       defaultTableName,
+		createStatement: defaultCreateStatement,
 	}
 	for _, opt := range opts {
 		opt(m)
@@ -83,13 +100,7 @@ func New(opts ...Option) (*Migrator, error) {
 // Migrate applies all available migrations
 func (m *Migrator) Migrate(db *sql.DB) error {
 	// create migrations table if doesn't exist
-	_, err := db.Exec(fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS %s (
-			id INT8 NOT NULL,
-			version VARCHAR(255) NOT NULL,
-			PRIMARY KEY (id)
-		);
-	`, m.tableName))
+	_, err := db.Exec(fmt.Sprintf(m.createStatement, m.tableName))
 	if err != nil {
 		return err
 	}
