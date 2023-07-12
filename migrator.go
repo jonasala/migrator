@@ -75,7 +75,7 @@ func New(opts ...Option) (*Migrator, error) {
 	m := &Migrator{
 		logger:          log.New(os.Stdout, "migrator: ", 0),
 		tableName:       defaultTableName,
-		createStatement: defaultCreateStatement,
+		createStatement: fmt.Sprintf(defaultCreateStatement, defaultTableName),
 	}
 	for _, opt := range opts {
 		opt(m)
@@ -100,7 +100,7 @@ func New(opts ...Option) (*Migrator, error) {
 // Migrate applies all available migrations
 func (m *Migrator) Migrate(db *sql.DB) error {
 	// create migrations table if doesn't exist
-	_, err := db.Exec(fmt.Sprintf(m.createStatement, m.tableName))
+	_, err := db.Exec(m.createStatement)
 	if err != nil {
 		return err
 	}
